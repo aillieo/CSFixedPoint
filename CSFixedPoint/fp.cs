@@ -7,47 +7,46 @@ namespace AillieoUtils.CSFixedPoint
     [Serializable]
     public struct fp : IComparable, IComparable<fp>, IEquatable<fp>
     {
-#if FP_FRAC_BITS_8
-        private static readonly int FracBits = 8;
+        private static readonly int FracBits = 32;
+        private static readonly long FracMask = (1l << FracBits) - 1;
+        private static readonly long IntMask = -1l & ~FracMask;
 
-#elif FP_FRAC_BITS_16
-        private static readonly int FracBits = 16;
-#elif FP_FRAC_BITS_24
-        private static readonly int FracBits = 24;
-#else
-        private static readonly int FracBits = 16;
-#endif
-        private static readonly int FracMask = (1 << FracBits) - 1;
-        private static readonly int IntMask = -1 & ~FracMask;
-
-        private static readonly int Denominator = FracMask + 1;
+        private static readonly long Denominator = FracMask + 1;
         private static readonly double DenominatorD = (double)Denominator;
         private static readonly float DenominatorF = (float)Denominator;
 
         public static readonly fp Epsilon = new fp() { raw = 1 };
-        public static readonly fp One = new fp() { raw = 1 << FracBits };
-        public static readonly fp MinusOne = new fp() { raw = (-1) << FracBits };
+        public static readonly fp One = new fp() { raw = 1l << FracBits };
+        public static readonly fp MinusOne = new fp() { raw = (-1l) << FracBits };
         public static readonly fp Zero = new fp() { raw = 0 };
-        public static readonly fp MinValue = new fp() { raw = int.MinValue };
-        public static readonly fp MaxValue = new fp() { raw = int.MaxValue };
+        public static readonly fp MinValue = new fp() { raw = long.MinValue };
+        public static readonly fp MaxValue = new fp() { raw = long.MaxValue };
 
-        private int raw;
+        internal long raw;
 
-        internal fp(int int32, uint frac32)
+        internal static fp Nearest(double value)
         {
-            if (int32 > fp.MaxValue)
+            if (value > (double)fp.MaxValue)
             {
-                throw new ArgumentOutOfRangeException($"arg greater than maxValue: {nameof(int32)}={int32}");
+                throw new ArgumentOutOfRangeException($"arg greater than maxValue: {nameof(value)}={value}");
             }
 
-            if (int32 < fp.MinValue)
+            if (value < (double)fp.MinValue)
             {
-                throw new ArgumentOutOfRangeException($"arg less than minValue: {nameof(int32)}={int32}");
+                throw new ArgumentOutOfRangeException($"arg less than minValue: {nameof(value)}={value}");
             }
 
-            raw = (int32 << FracBits) + (int)(frac32 / (((long)uint.MaxValue + 1) / Denominator));
+            long int32 = (long)Math.Floor(value);
+            long frac32 = (long)((value - int32) * DenominatorD);
+            long raw = (int32 << FracBits) + frac32;
+            return new fp() { raw = raw};
         }
 
+        internal static fp CreateWithRaw(long raw)
+        {
+            return new fp(){ raw = raw};
+        }
+        
         public static explicit operator double(fp value)
         {
             return (double)(value.raw >> FracBits) + ((value.raw & FracMask) / DenominatorD);
@@ -60,12 +59,12 @@ namespace AillieoUtils.CSFixedPoint
 
         public static explicit operator int(fp value)
         {
-            return (value.raw + FracMask) >> FracBits;
+            return (int)((value.raw + FracMask) >> FracBits);
         }
 
         public static implicit operator fp(int value)
         {
-            return new fp { raw = value << FracBits };
+            return new fp { raw = (long)value << FracBits };
         }
 
         public static bool operator ==(fp lhs, fp rhs)
@@ -130,7 +129,16 @@ namespace AillieoUtils.CSFixedPoint
 
         public static fp operator *(fp lhs, fp rhs)
         {
-            return new fp() { raw = (int)(((long)lhs.raw * (long)rhs.raw + (Denominator >> 1)) >> FracBits) };
+            long lhsHi = lhs.raw >> FracBits;
+            long lhsLo = lhs.raw & FracMask;
+            long rhsHi = rhs.raw >> FracBits;
+            long rhsLo = rhs.raw & FracMask;
+            long raw =
+                ((lhsHi * rhsHi) << FracBits) +
+                lhsHi * rhsLo +
+                lhsLo * rhsHi + 
+                ((lhsLo * rhsLo) >> FracBits);
+            return new fp(){raw = raw};
         }
 
         public static fp operator /(fp lhs, fp rhs)

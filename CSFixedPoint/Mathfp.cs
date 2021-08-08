@@ -4,13 +4,13 @@ namespace AillieoUtils.CSFixedPoint
 {
     public static class Mathfp
     {
-        public static readonly fp PI = new fp(3, (uint)((Math.PI - 3) * uint.MaxValue));
+        public static readonly fp PI = fp.Nearest(Math.PI);
 
         public static readonly fp Deg2Rad = PI / (fp)180;
 
         public static readonly fp Rad2Deg = (fp)180 / PI;
 
-        public static readonly fp E = new fp(2, (uint)((Math.E - 2) * uint.MaxValue));
+        public static readonly fp E = fp.Nearest(Math.E);
 
         public static fp Abs(fp f) { return f > fp.Zero ? f : -f; }
 
@@ -100,7 +100,27 @@ namespace AillieoUtils.CSFixedPoint
             return a + (b - a) * t;
         }
 
-        public static fp Sqrt(fp f) { throw new NotImplementedException(); }
+        public static fp Sqrt(fp f)
+        {
+            if (f == fp.One)
+            {              
+                return fp.One;
+            }
+            if (f == fp.Zero)
+            {
+                return fp.Zero;
+            }
+
+            fp t = f;
+            fp x0 = f;
+            fp two = (fp) 2;
+            x0 = x0 / two + t / (two*x0);
+            while(x0 * x0 - t > fp.Epsilon * 10)
+            {
+                x0 = x0 / two + t / (two*x0);
+            }
+            return x0;
+        }
 
         public static fp Sin(fp f) { throw new NotImplementedException(); }
 
