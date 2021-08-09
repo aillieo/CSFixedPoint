@@ -12,9 +12,16 @@ namespace AillieoUtils.CSFixedPoint
 
         public static readonly fp E = fp.Nearest(Math.E);
 
-        public static fp Abs(fp f) { return f > fp.Zero ? f : -f; }
+        public static fp Abs(fp f) 
+        {
+            if(f <= int.MinValue)
+            {
+                return -(f + 1);
+            }
+            return f > fp.Zero ? f : -f; 
+        }
 
-        public static fp Sign(fp f) { return f > fp.Zero ? fp.One : fp.MinusOne; }
+        public static int Sign(fp f) { return f >= fp.Zero ? 1 : -1; }
 
         public static fp Min(fp a, fp b) { return a < b ? a : b; }
 

@@ -1,15 +1,30 @@
 using System;
 using Xunit;
+using Xunit.Abstractions;
+
 namespace AillieoUtils.CSFixedPoint.Test
 {
     public class FixedPointTest
     {
-        private static readonly Random rand = new Random();
+        public FixedPointTest(ITestOutputHelper outputHelper)
+        {
+            testOutputHelper = outputHelper;
+        }
+
+        private readonly ITestOutputHelper testOutputHelper;
+        private static readonly Random rand = new Random(453500);
         private static readonly fp[] testSet = new fp[]
         {
             fp.MinValue, fp.MaxValue,
             fp.One, fp.MinusOne, fp.Zero,
+
             fp.Epsilon,
+            - fp.Epsilon,
+            fp.One + fp.Epsilon,
+            fp.One - fp.Epsilon,
+
+            fp.EpsilonSqrt,
+
             (fp)(int.MinValue), (fp)(int.MaxValue),
             (fp)(short.MinValue), (fp)(short.MaxValue),
 
@@ -24,18 +39,18 @@ namespace AillieoUtils.CSFixedPoint.Test
             
             fp.Nearest(0.9), fp.Nearest(0.999), fp.Nearest(0.99999), fp.Nearest(0.9999999), fp.Nearest(0.999999999),
             fp.Nearest(-0.9), fp.Nearest(-0.999), fp.Nearest(-0.99999), fp.Nearest(-0.9999999), fp.Nearest(-0.999999999),
-            
-            (fp)rand.NextDouble(), 
-            (fp)rand.NextDouble(), 
-            (fp)rand.NextDouble(), 
-            (fp)rand.NextDouble(), 
-            (fp)rand.NextDouble(),
 
-            (fp)rand.Next(int.MinValue, int.MaxValue), 
-            (fp)rand.Next(int.MinValue, int.MaxValue), 
-            (fp)rand.Next(int.MinValue, int.MaxValue), 
-            (fp)rand.Next(int.MinValue, int.MaxValue), 
-            (fp)rand.Next(int.MinValue, int.MaxValue), 
+            fp.Nearest(rand.NextDouble()),
+            fp.Nearest(rand.NextDouble()),
+            fp.Nearest(rand.NextDouble()),
+            fp.Nearest(rand.NextDouble()),
+            fp.Nearest(rand.NextDouble()),
+
+            (fp)rand.Next(int.MinValue, int.MaxValue),
+            (fp)rand.Next(int.MinValue, int.MaxValue),
+            (fp)rand.Next(int.MinValue, int.MaxValue),
+            (fp)rand.Next(int.MinValue, int.MaxValue),
+            (fp)rand.Next(int.MinValue, int.MaxValue),
         };
 
         private static void AssertApproximatelyEqual(fp f0, fp f1)
@@ -46,6 +61,11 @@ namespace AillieoUtils.CSFixedPoint.Test
         private static void AssertApproximatelyEqual(double f0, double f1)
         {
             Assert.True(Math.Abs(f0 - f1) <= (double)fp.Epsilon, $"{f0}, {f1}"); 
+        }
+
+        private static void AssertApproximatelyEqual(double f0, double f1, double error)
+        {
+            Assert.True(Math.Abs(f0 - f1) <= Math.Abs(error), $"{f0}, {f1}");
         }
 
         [Fact]
@@ -109,14 +129,16 @@ namespace AillieoUtils.CSFixedPoint.Test
                     if (f1 >= fp.One && f2 == int.MaxValue) { continue; }
                     if (f1 == int.MinValue && f2 <= fp.MinusOne) { continue; }
                     if (f1 <= fp.MinusOne && f2 == int.MinValue) { continue; }
-                    
+                    if ((long)f1 + (long)f2 > (long)int.MaxValue) { continue; }
+                    if ((long)f1 + (long)f2 < (long)int.MinValue) { continue; }
+
                     AssertApproximatelyEqual((double)(f1 + f2), (double)(f1) + (double)(f2));
                 }   
             }
         }
         
         [Fact]
-        public static void FixedPointTest06()
+        public void FixedPointTest06()
         {
             foreach (var f1 in testSet)
             {
@@ -130,54 +152,70 @@ namespace AillieoUtils.CSFixedPoint.Test
                     if (f1 >= fp.Zero && f2 == int.MinValue) { continue; }
                     if (f1 == int.MinValue && f2 >= fp.MinusOne) { continue; }
                     if (f1 <= fp.MinusOne && f2 == int.MaxValue) { continue; }
-                    
-                    // Console.WriteLine($"{f1} {f2}");
+                    if ((long)f1 - (long)f2 > (long)int.MaxValue) { continue; }
+                    if ((long)f1 - (long)f2 < (long)int.MinValue) { continue; }
+
+                    //testOutputHelper.WriteLine($"{f1},{f2},{f1 - f2}");
                     AssertApproximatelyEqual((double)(f1 - f2), (double)(f1) - (double)(f2));
                 }   
             }
         }
         
         [Fact]
-        public static void FixedPointTest07()
+        public void FixedPointTest07()
         {
-            fp safeFrac = fp.Epsilon * 100000;
+            AssertApproximatelyEqual(fp.Epsilon, fp.EpsilonSqrt * fp.EpsilonSqrt);
+
             foreach (var f1 in testSet)
             {
                 foreach (var f2 in testSet)
                 {
                     if (Mathfp.Abs(f1) >= int.MaxValue && Mathfp.Abs(f2) > fp.One) { continue; }
                     if (Mathfp.Abs(f1) > fp.One && Mathfp.Abs(f2) >= int.MaxValue) { continue; }
-                    if (Mathfp.Abs(f1) <= safeFrac  && Mathfp.Abs(f2) <= safeFrac) { continue; }
+                    if (f1 <= int.MinValue || f2 <= int.MinValue) { continue; }
+                    if (f1 == fp.MaxValue || f2 == fp.MaxValue) { continue; }
+                    if (f1 == fp.MinValue || f2 == fp.MinValue) { continue; }
+                    if ((long)f1 * (long)f2 > (long)(int.MaxValue)) { continue; }
+                    if ((long)f1 * (long)f2 < (long)(int.MinValue)) { continue; }
+                    double dm = (double)f1 * (double)f2;
+                    double de = (double)fp.Epsilon;
+                    if (dm < de && dm > -de) { continue; }
 
-                    // Console.WriteLine($"{f1} {f2}");
-                    AssertApproximatelyEqual((double)(f1 * f2), (double)(f1) * (double)(f2));
-                }   
+                    AssertApproximatelyEqual((double)(f1 * f2), (double)(f1) * (double)(f2), (double)fp.Epsilon * 10);
+                }
             }
         }
         
         [Fact]
-        public static void FixedPointTest08()
+        public void FixedPointTest08()
         {
+            testOutputHelper.WriteLine($"{(fp)2},{(fp)3},{(fp)2 / (fp)3}");
+            testOutputHelper.WriteLine($"{(fp)3},{(fp)2},{(fp)3 / (fp)2}");
+
             foreach (var f1 in testSet)
             {
                 foreach (var f2 in testSet)
                 {
-                    // if (f1 == fp.MaxValue && f2 < fp.Zero) { continue; }
-                    // if (f1 > fp.MinusOne && f2 == fp.MinValue) { continue; }
-                    // if (f1 == fp.MinValue && f2 > fp.Zero) { continue; }
-                    // if (f1 < fp.Zero && f2 == fp.MaxValue) { continue; }
-                    // if (f1 == int.MaxValue && f2 <= fp.One) { continue; }
-                    // if (f1 >= fp.Zero && f2 == int.MinValue) { continue; }
-                    // if (f1 == int.MinValue && f2 >= fp.MinusOne) { continue; }
-                    // if (f1 <= fp.MinusOne && f2 == int.MaxValue) { continue; }
-                    
-                    // AssertApproximatelyEqual((double)(f1 / f2), (double)(f1) / (double)(f2));
-                }   
+                    if (f2 == fp.Zero) { continue; }
+                    if (Mathfp.Abs(f1) >= int.MaxValue && Mathfp.Abs(f2) < fp.One) { continue; }
+                    if (f1 <= int.MinValue || f2 <= int.MinValue) { continue; }
+                    if (f1 == fp.MaxValue || f2 == fp.MaxValue) { continue; }
+                    if (f1 == fp.MinValue || f2 == fp.MinValue) { continue; }
+                    if ((long)f1 / (double)f2 > (long)(int.MaxValue)) { continue; }
+                    if ((long)f1 / (double)f2 < (long)(int.MinValue)) { continue; }
+                    double dm = (double)f1 * (double)f2;
+                    double de = (double)fp.Epsilon;
+                    if (dm < de && dm > -de) { continue; }
+
+                    testOutputHelper.WriteLine($"{f1},{f2},{f1 / f2}");
+                    testOutputHelper.WriteLine($"{(double)(f1 / f2) - (double)(f1) / (double)(f2)}");
+                    AssertApproximatelyEqual((double)(f1 / f2), (double)(f1) / (double)(f2), (double)fp.Epsilon * 1000);
+                }
             }
         }
         
         [Fact]
-        public static void FixedPointTest09()
+        public void FixedPointTest09()
         {
             foreach (var f1 in testSet)
             {
@@ -185,7 +223,8 @@ namespace AillieoUtils.CSFixedPoint.Test
                 {
                     continue;
                 }
-                
+
+                //testOutputHelper.WriteLine($"{Math.Sqrt((double)f1)}, {(double)Mathfp.Sqrt(f1)}");
                 //AssertApproximatelyEqual(Math.Sqrt((double)f1), (double)Mathfp.Sqrt(f1));
             }
         }
