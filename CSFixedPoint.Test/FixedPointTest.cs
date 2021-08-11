@@ -189,8 +189,8 @@ namespace AillieoUtils.CSFixedPoint.Test
         [Fact]
         public void FixedPointTest08()
         {
-            testOutputHelper.WriteLine($"{(fp)2},{(fp)3},{(fp)2 / (fp)3}");
-            testOutputHelper.WriteLine($"{(fp)3},{(fp)2},{(fp)3 / (fp)2}");
+            //testOutputHelper.WriteLine($"{(fp)2},{(fp)3},{(fp)2 / (fp)3}");
+            //testOutputHelper.WriteLine($"{(fp)3},{(fp)2},{(fp)3 / (fp)2}");
 
             foreach (var f1 in testSet)
             {
@@ -201,15 +201,15 @@ namespace AillieoUtils.CSFixedPoint.Test
                     if (f1 <= int.MinValue || f2 <= int.MinValue) { continue; }
                     if (f1 == fp.MaxValue || f2 == fp.MaxValue) { continue; }
                     if (f1 == fp.MinValue || f2 == fp.MinValue) { continue; }
-                    if ((long)f1 / (double)f2 > (long)(int.MaxValue)) { continue; }
-                    if ((long)f1 / (double)f2 < (long)(int.MinValue)) { continue; }
+                    if ((double)f1 / (double)f2 > (double)(int.MaxValue)) { continue; }
+                    if ((double)f1 / (double)f2 < (double)(int.MinValue)) { continue; }
                     double dm = (double)f1 * (double)f2;
                     double de = (double)fp.Epsilon;
                     if (dm < de && dm > -de) { continue; }
 
-                    testOutputHelper.WriteLine($"{f1},{f2},{f1 / f2}");
-                    testOutputHelper.WriteLine($"{(double)(f1 / f2) - (double)(f1) / (double)(f2)}");
-                    AssertApproximatelyEqual((double)(f1 / f2), (double)(f1) / (double)(f2), (double)fp.Epsilon * 1000);
+                    //testOutputHelper.WriteLine($"{f1},{f2},{f1 / f2}");
+                    //testOutputHelper.WriteLine($"[{count++}]  {(double)(f1 / f2) - (double)(f1) / (double)(f2)}");
+                    AssertApproximatelyEqual((double)(f1 / f2), (double)(f1) / (double)(f2), (double)fp.Epsilon * 10);
                 }
             }
         }
@@ -217,6 +217,10 @@ namespace AillieoUtils.CSFixedPoint.Test
         [Fact]
         public void FixedPointTest09()
         {
+            testOutputHelper.WriteLine($"{Math.Sqrt((double)4)}, {(double)Mathfp.Sqrt((fp)4)}");
+            testOutputHelper.WriteLine($"{Math.Sqrt((double)0.04)}, {(double)Mathfp.Sqrt(fp.Nearest(0.04))}");
+            testOutputHelper.WriteLine($"{Math.Sqrt((double)3600)}, {(double)Mathfp.Sqrt((fp)3600)}");
+
             foreach (var f1 in testSet)
             {
                 if (f1 < fp.Zero)
@@ -224,8 +228,8 @@ namespace AillieoUtils.CSFixedPoint.Test
                     continue;
                 }
 
-                //testOutputHelper.WriteLine($"{Math.Sqrt((double)f1)}, {(double)Mathfp.Sqrt(f1)}");
-                //AssertApproximatelyEqual(Math.Sqrt((double)f1), (double)Mathfp.Sqrt(f1));
+                testOutputHelper.WriteLine($"{f1}, err={Math.Sqrt((double)f1) -(double)Mathfp.Sqrt(f1)}");
+                AssertApproximatelyEqual(Math.Sqrt((double)f1), (double)Mathfp.Sqrt(f1), 1e-4);
             }
         }
     }

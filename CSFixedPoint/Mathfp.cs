@@ -12,13 +12,13 @@ namespace AillieoUtils.CSFixedPoint
 
         public static readonly fp E = fp.Nearest(Math.E);
 
-        public static fp Abs(fp f) 
+        public static fp Abs(fp f)
         {
-            if(f <= int.MinValue)
+            if (f <= int.MinValue)
             {
                 return -(f + 1);
             }
-            return f > fp.Zero ? f : -f; 
+            return f > fp.Zero ? f : -f;
         }
 
         public static int Sign(fp f) { return f >= fp.Zero ? 1 : -1; }
@@ -110,7 +110,7 @@ namespace AillieoUtils.CSFixedPoint
         public static fp Sqrt(fp f)
         {
             if (f == fp.One)
-            {              
+            {
                 return fp.One;
             }
             if (f == fp.Zero)
@@ -118,16 +118,52 @@ namespace AillieoUtils.CSFixedPoint
                 return fp.Zero;
             }
 
-            fp t = f;
-            fp x0 = f;
-            fp two = (fp) 2;
-            x0 = x0 / two + t / (two*x0);
-            while(x0 * x0 - t > fp.Epsilon * 10)
+            long r0 = f.raw;
+            int safeShift = 0;
+
+            // 尝试左移 当fp比较小的时候 放大以提高精度
+            while ((r0 & fp.Hi2Mask) == 0 && safeShift + 2 <= fp.LeftShiftMax)
             {
-                x0 = x0 / two + t / (two*x0);
+                r0 <<= 2;
+                safeShift += 2;
             }
-            return x0;
+
+            long result;
+            if (fp.FracBits - safeShift > 0)
+            {
+                result = SqrtL(r0) << ((fp.FracBits - safeShift) / 2);
+            }
+            else
+            {
+                result = SqrtL(r0) >> ((safeShift - fp.FracBits) / 2);
+            }
+
+            return new fp() { raw = result };
         }
+
+        //// 牛顿迭代法
+        //public static fp Sqrt(fp f)
+        //{
+        //    if (f == fp.One)
+        //    {
+        //        return fp.One;
+        //    }
+        //    if (f == fp.Zero)
+        //    {
+        //        return fp.Zero;
+        //    }
+
+        //    fp t = f;
+        //    fp x0 = f;
+        //    fp two = (fp)2;
+        //    x0 = x0 / two + t / (two * x0);
+        //    // 注意需要防止溢出 x0*x0
+        //    while (x0 * x0 - t > fp.Epsilon * 10)
+        //    {
+        //        x0 = x0 / two + t / (two * x0);
+        //    }
+        //    return x0;
+        //}
 
         public static fp Sin(fp f) { throw new NotImplementedException(); }
 
@@ -164,5 +200,32 @@ namespace AillieoUtils.CSFixedPoint
         public static int FloorToInt(fp f) { throw new NotImplementedException(); }
 
         public static int RoundToInt(fp f) { throw new NotImplementedException(); }
+
+        // https://en.wikipedia.org/wiki/Methods_of_computing_square_roots
+        private static long SqrtL(long l)
+        {
+            long res = 0;
+            long one = fp.Hi1Mask;
+            long op = l;
+
+            while (one > op)
+            {
+                one >>= 2;
+            }
+
+            while (one > 0)
+            {
+                long t = res + one;
+                res >>= 1;
+                if (op >= t)
+                {
+                    op -= t;
+                    res += one;
+                }
+                one >>= 2;
+            }
+
+            return res;
+        }
     }
 }

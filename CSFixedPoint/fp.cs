@@ -7,10 +7,13 @@ namespace AillieoUtils.CSFixedPoint
     [Serializable]
     public struct fp : IComparable, IComparable<fp>, IEquatable<fp>
     {
-        private static readonly int FracBits = 32;
-        private static readonly long FracMask = (1l << FracBits) - 1;
+        internal static readonly int FracBits = 32;
+        internal static readonly long FracMask = (1l << FracBits) - 1;
         private static readonly int FracBitsMinusOne = FracBits - 1;
         private static readonly long FracMinusOneMask = (1l << FracBitsMinusOne) - 1;
+        internal static readonly int LeftShiftMax = 62; // 64 - 1 - 1
+        internal static readonly long Hi2Mask = 0x6000000000000000;  // 0b_110 0000 ...
+        internal static readonly long Hi1Mask = 0x4000000000000000;  // 0b_100 0000 ...
 
         private static readonly long Denominator = FracMask + 1;
         private static readonly double DenominatorD = (double)Denominator;
@@ -45,7 +48,7 @@ namespace AillieoUtils.CSFixedPoint
 
         internal static fp CreateWithRaw(long raw)
         {
-            return new fp(){ raw = raw};
+            return new fp(){ raw = raw };
         }
         
         public static explicit operator double(fp value)
@@ -66,6 +69,11 @@ namespace AillieoUtils.CSFixedPoint
         public static explicit operator int(fp value)
         {
             return (int)(long)value;
+        }
+
+        public static implicit operator fp(long value)
+        {
+            return new fp { raw = value << FracBits };
         }
 
         public static implicit operator fp(int value)
@@ -176,40 +184,51 @@ namespace AillieoUtils.CSFixedPoint
             long ra = rhs.raw > 0 ? rhs.raw : -rhs.raw;
             long qu = la / ra;
             long re = la % ra;
-            if (re == 0)
-            {
-                return new fp() { raw = sign * (qu << FracBits) };
-            }
-            int safeShift = 0;
+
             long qu0 = qu;
             long re0 = re;
-            long maskHi2 = 0x6000000000000000;  // 0b_110 0000 ...
-            long maskHi1 = 0x4000000000000000;  // 0b_100 0000 ...
-            while ((re0 & maskHi2) == 0)
-            {
-                re0 <<= 2;
-                safeShift += 2;
-            }
-            while ((re0 & maskHi1) == 0)
-            {
-                re0 <<= 1;
-                safeShift += 1;
-            }
+            long ra0 = ra;
+            int safeShift = 0;
 
-            if (safeShift > FracBits)
+            long result = qu0 << FracBits;
+
+            // 当ra的最高位（不含符号）为1时 0b01__ ____ ...
+            // 后边即使放大re 可能会一直被截断
+            // 为了防止出现这种情况 直接把re和ra都右移一位
+            // 损失一些精度 避免出现截断
+            // 待优化
+            if ((ra0 & Hi1Mask) != 0)
             {
-                safeShift = FracBits;
-                re0 = re << safeShift;
+                ra0 >>= 1;
+                re0 >>= 1;
             }
 
-            // 需要解决的问题：
-            // 当ra太大时 截断的误差过大
+            while (re0 != 0 && safeShift < LeftShiftMax)
+            {
+                while ((re0 & Hi2Mask) == 0 && safeShift + 2 <= LeftShiftMax)
+                {
+                    re0 <<= 2;
+                    safeShift += 2;
+                }
+                while ((re0 & Hi1Mask) == 0 && safeShift + 1 <= LeftShiftMax)
+                {
+                    re0 <<= 1;
+                    safeShift += 1;
+                }
 
-            long raw = sign * (
-                    (qu << FracBits) + 
-                    ((re0 / ra ) << (FracBits - safeShift))
-                );
-            return new fp() { raw = raw };
+                if(FracBits - safeShift > 0)
+                {
+                    result = result + ((re0 / ra0) << (FracBits - safeShift));
+                }
+                else
+                {
+                    result = result + ((re0 / ra0) >> (safeShift - FracBits));
+                }
+
+                re0 = re0 % ra0;
+            }
+
+            return new fp() { raw = sign * result };
         }
 
         public static fp operator %(fp lhs, fp rhs)
