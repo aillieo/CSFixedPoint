@@ -232,5 +232,44 @@ namespace AillieoUtils.CSFixedPoint.Test
                 AssertApproximatelyEqual(Math.Sqrt((double)f1), (double)Mathfp.Sqrt(f1), 1e-4);
             }
         }
+
+        [Fact]
+        public void FixedPointTest10()
+        {
+            foreach (var f in testSet)
+            {
+                if (f >= int.MaxValue) { continue; }
+
+                testOutputHelper.WriteLine($"{f}: {Mathfp.Floor(f)},{Mathfp.FloorToInt(f)},{Mathfp.Ceil(f)},{Mathfp.CeilToInt(f)}");
+
+                AssertApproximatelyEqual(Math.Ceiling((double)f), (double)Mathfp.Ceil(f), (double)fp.Epsilon * 10);
+                AssertApproximatelyEqual(Math.Floor((double)f), (double)Mathfp.Floor(f), (double)fp.Epsilon * 10);
+                AssertApproximatelyEqual(Math.Ceiling((double)f), (double)Mathfp.CeilToInt(f), (double)fp.Epsilon * 10);
+                AssertApproximatelyEqual(Math.Floor((double)f), (double)Mathfp.FloorToInt(f), (double)fp.Epsilon * 10);
+            }
+        }
+
+        [Fact]
+        public void FixedPointTest11()
+        {
+            for (double d = - Math.PI * 2; d < Math.PI * 2; d += 0.001)
+            {
+                fp f = fp.Nearest(d);
+                testOutputHelper.WriteLine($"{d / (Math.PI / 2)}: {f}, err={Math.Sin((double)f) - (double)Mathfp.Sin(f)}");
+                AssertApproximatelyEqual(Math.Sin((double)f), (double)Mathfp.Sin(f), 1e-4);
+                AssertApproximatelyEqual(Math.Cos((double)f), (double)Mathfp.Cos(f), 1e-4);
+            }
+        }
+
+        [Fact]
+        public void FixedPointTest12()
+        {
+            for (double d = -Math.PI * 2; d < Math.PI * 2; d += 0.001)
+            {
+                fp f = fp.Nearest(d);
+                testOutputHelper.WriteLine($"{d / (Math.PI / 2)}: {f}, err={Math.Tan((double)f) - (double)Mathfp.Tan(f)}");
+                AssertApproximatelyEqual(Math.Tan((double)f), (double)Mathfp.Tan(f), Math.Max(1e-4, Math.Abs(Math.Tan((double)f)) * 1e-1));
+            }
+        }
     }
 }

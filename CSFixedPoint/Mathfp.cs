@@ -165,11 +165,69 @@ namespace AillieoUtils.CSFixedPoint
         //    return x0;
         //}
 
-        public static fp Sin(fp f) { throw new NotImplementedException(); }
+        public static fp Sin(fp f) 
+        {
+            fp f0 = f % (2 * PI);
+            if (f0 < fp.Zero)
+            {
+                f0 += 2 * PI;
+            }
+            bool flip = false;
+            if (f0 > PI)
+            {
+                f0 = f0 - PI;
+                flip = true;
+            }
+            if (f0 > PI / 2)
+            {
+                f0 = PI - f0;
+            }
 
-        public static fp Cos(fp f) { throw new NotImplementedException(); }
+            fp p = (f0 / (PI / 2)) * (FPSinLut.table.Length - 1);
+            int left = FloorToInt(p);
+            int right = CeilToInt(p);
 
-        public static fp Tan(fp f) { throw new NotImplementedException(); }
+            fp lf = FPSinLut.table[left];
+            fp rf = FPSinLut.table[right];
+            fp result = Lerp(lf, rf, p);
+            return flip ? -result : result;
+        }
+
+        public static fp Cos(fp f) 
+        {
+            return Sin(PI / 2 - f);
+        }
+
+        public static fp Tan(fp f)
+        {
+            fp f0 = f % PI;
+            if (f0 < fp.Zero)
+            {
+                f0 += PI;
+            }
+            bool flip = false;
+            if (f0 > PI / 2)
+            {
+                f0 = PI - f0;
+                flip = true;
+            }
+
+            fp p = (f0 / (PI / 2)) * (FPTanLut.table.Length - 1);
+            int left = FloorToInt(p);
+            int right = CeilToInt(p);
+
+            // tan在 PI/2 附近的精度很底 需要做一些特殊处理
+            // 待优化
+            if (right == FPTanLut.table.Length - 1)
+            {
+                return Sin(f) / Cos(f);
+            }
+
+            fp lf = FPTanLut.table[left];
+            fp rf = FPTanLut.table[right];
+            fp result = Lerp(lf, rf, p);
+            return flip ? -result : result;
+        }
 
         public static fp Asin(fp f) { throw new NotImplementedException(); }
 
@@ -189,15 +247,31 @@ namespace AillieoUtils.CSFixedPoint
 
         public static fp Log10(fp f) { throw new NotImplementedException(); }
 
-        public static fp Ceil(fp f) { throw new NotImplementedException(); }
+        public static fp Ceil(fp f) 
+        {
+            bool hasFrac = (f.raw & fp.FracMask) != 0;
+            fp floor = Floor(f);
+            return hasFrac ? floor + fp.One : floor;
+        }
 
-        public static fp Floor(fp f) { throw new NotImplementedException(); }
+        public static fp Floor(fp f) 
+        {
+            return new fp() { raw = f.raw & (~fp.FracMask) };
+        }
 
         public static fp Round(fp f) { throw new NotImplementedException(); }
 
-        public static int CeilToInt(fp f) { throw new NotImplementedException(); }
+        public static int CeilToInt(fp f)
+        {
+            bool hasFrac = (f.raw & fp.FracMask) != 0;
+            int floor = FloorToInt(f);
+            return hasFrac ? floor + 1 : floor;
+        }
 
-        public static int FloorToInt(fp f) { throw new NotImplementedException(); }
+        public static int FloorToInt(fp f) 
+        {
+            return (int)f;
+        }
 
         public static int RoundToInt(fp f) { throw new NotImplementedException(); }
 
