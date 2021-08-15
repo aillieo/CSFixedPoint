@@ -271,5 +271,23 @@ namespace AillieoUtils.CSFixedPoint.Test
                 AssertApproximatelyEqual(Math.Tan((double)f), (double)Mathfp.Tan(f), Math.Max(1e-4, Math.Abs(Math.Tan((double)f)) * 1e-1));
             }
         }
+
+        [Fact]
+        public void FixedPointTest13()
+        {
+            for (int i = 1; i < 9; ++i)
+            {
+                long p = (long)Math.Pow(2, i);
+                testOutputHelper.WriteLine($"{i},{p}, {p - Math.Pow(2, (double)Mathfp.Log2(p))}");
+            }
+
+            foreach (var f in testSet)
+            {
+                if (f <= fp.Zero) { continue; }
+
+                testOutputHelper.WriteLine($"{f}, err={Math.Log((double)f, 2) - (double)Mathfp.Log2(f)}");
+                AssertApproximatelyEqual(Math.Log((double)f), (double)Mathfp.Log(f), 1e-4);
+            }
+        }
     }
 }

@@ -11,6 +11,8 @@ namespace AillieoUtils.CSFixedPoint
         public static readonly fp Rad2Deg = (fp)180 / PI;
 
         public static readonly fp E = fp.Nearest(Math.E);
+        
+        public static readonly fp Ln2 = fp.Nearest(Math.Log(2));
 
         public static fp Abs(fp f)
         {
@@ -235,7 +237,7 @@ namespace AillieoUtils.CSFixedPoint
 
         public static fp Atan(fp f) { throw new NotImplementedException(); }
 
-        public static fp Atan2(fp y, fp x) { throw new NotImplementedException(); }
+        public static fp Atan(fp y, fp x) { throw new NotImplementedException(); }
 
         public static fp Pow(fp f, fp p) { throw new NotImplementedException(); }
 
@@ -243,7 +245,10 @@ namespace AillieoUtils.CSFixedPoint
 
         public static fp Log(fp f, fp p) { throw new NotImplementedException(); }
 
-        public static fp Log(fp f) { throw new NotImplementedException(); }
+        public static fp Log(fp f) 
+        {
+            return Log2(f) * Ln2;
+        }
 
         public static fp Log10(fp f) { throw new NotImplementedException(); }
 
@@ -301,5 +306,33 @@ namespace AillieoUtils.CSFixedPoint
 
             return res;
         }
+
+        public static fp Log2(fp f) 
+        {
+            long raw = Log2L(f.raw) - fp.FracBits;
+            // todo 最后再<<fp.FracBits    截断损失太大了
+            return new fp() { raw = raw << fp.FracBits };
+        }
+
+        // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
+        private static readonly long[] l2bits = new long[] { 0x0FFFFFFF00000000, 0xFFFF0000, 0xFF00, 0xF0, 0xC, 0x2 };
+        private static readonly int[] l2shifts = new int[] { 1 << 5, 1 << 4, 1 << 3, 1 << 2, 1 << 1, 1 << 0 };
+        private static long Log2L(long l)
+        {
+            long result = 0;
+            for (int i = 0; i < 6; i++)
+            {
+                if ((l & l2bits[i]) != 0)
+                {
+                    l >>= l2shifts[i];
+                    result |= (long)l2shifts[i];
+                }
+            }
+
+            return result;
+        }
+
+        private static fp Pow2(fp f) { throw new NotImplementedException(); }
+
     }
 }
