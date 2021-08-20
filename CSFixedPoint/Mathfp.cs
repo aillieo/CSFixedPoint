@@ -12,7 +12,9 @@ namespace AillieoUtils.CSFixedPoint
 
         public static readonly fp E = fp.Nearest(Math.E);
         
-        public static readonly fp Ln2 = fp.Nearest(Math.Log(2));
+        private static readonly fp Ln2 = fp.Nearest(Math.Log(2));
+
+        private static readonly fp Log10_2 = fp.Nearest(Math.Log(2, 10));
 
         public static fp Abs(fp f)
         {
@@ -243,14 +245,20 @@ namespace AillieoUtils.CSFixedPoint
 
         public static fp Exp(fp power) { throw new NotImplementedException(); }
 
-        public static fp Log(fp f, fp p) { throw new NotImplementedException(); }
+        public static fp Log(fp f, fp newBase) 
+        {
+            return Log2(f) / Log2(newBase);
+        }
 
         public static fp Log(fp f) 
         {
             return Log2(f) * Ln2;
         }
 
-        public static fp Log10(fp f) { throw new NotImplementedException(); }
+        public static fp Log10(fp f) 
+        {
+            return Log2(f) * Log10_2;
+        }
 
         public static fp Ceil(fp f) 
         {
@@ -307,11 +315,51 @@ namespace AillieoUtils.CSFixedPoint
             return res;
         }
 
+        //public static fp Log2(fp f)
+        //{
+        //    long raw = Log2L(f.raw) - fp.FracBits;
+        //    // todo 最后再<<fp.FracBits    截断损失太大了
+        //    return new fp() { raw = raw << fp.FracBits };
+        //}
+
+        // http://www.claysturner.com/dsp/BinaryLogarithm.pdf
         public static fp Log2(fp f) 
         {
-            long raw = Log2L(f.raw) - fp.FracBits;
-            // todo 最后再<<fp.FracBits    截断损失太大了
-            return new fp() { raw = raw << fp.FracBits };
+            fp two = (fp)2;
+            fp half = fp.One / two;
+            fp err = fp.Epsilon * 10;
+
+            // 1.
+            fp result = fp.Zero;
+            // 2.
+            fp b = half;
+            // 3.
+            while (f < fp.One)
+            {
+                f <<= 1;
+                result--;
+            }
+            // 4.
+            while (f >= two)
+            {
+                f >>= 1;
+                result++;
+            }
+
+            while(b >= err)
+            {
+                // 6.
+                f = f * f;
+                // 7.
+                if (f >= two)
+                {
+                    f >>= 1;
+                    result += b;
+                }
+                b >>= 1;
+            }
+
+            return result;
         }
 
         // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLog

@@ -275,18 +275,30 @@ namespace AillieoUtils.CSFixedPoint.Test
         [Fact]
         public void FixedPointTest13()
         {
-            for (int i = 1; i < 9; ++i)
-            {
-                long p = (long)Math.Pow(2, i);
-                testOutputHelper.WriteLine($"{i},{p}, {p - Math.Pow(2, (double)Mathfp.Log2(p))}");
-            }
+            //for (int i = 1; i < 9; ++i)
+            //{
+            //    long p = (long)Math.Pow(2, i);
+            //    testOutputHelper.WriteLine($"{i},{p}, {p - Math.Pow(2, (double)Mathfp.Log2(p))}");
+            //}
 
             foreach (var f in testSet)
             {
                 if (f <= fp.Zero) { continue; }
 
                 testOutputHelper.WriteLine($"{f}, err={Math.Log((double)f, 2) - (double)Mathfp.Log2(f)}");
-                AssertApproximatelyEqual(Math.Log((double)f), (double)Mathfp.Log(f), 1e-4);
+                AssertApproximatelyEqual(Math.Log((double)f, 2), (double)Mathfp.Log2(f), (double)fp.Epsilon * 100);
+
+                testOutputHelper.WriteLine($"{f}, err={Math.Log((double)f) - (double)Mathfp.Log(f)}");
+                AssertApproximatelyEqual(Math.Log((double)f), (double)Mathfp.Log(f), (double)fp.Epsilon * 100);
+
+                testOutputHelper.WriteLine($"{f}, err={Math.Log10((double)f) - (double)Mathfp.Log10(f)}");
+                AssertApproximatelyEqual(Math.Log10((double)f), (double)Mathfp.Log10(f), (double)fp.Epsilon * 100);
+
+                foreach (var fbase in new fp[] { (fp)3, (fp)5, (fp)100, fp.Nearest(0.1), fp.Nearest(2.5) })
+                {
+                    testOutputHelper.WriteLine($"{f}, err={Math.Log((double)f, (double)fbase) - (double)Mathfp.Log(f, fbase)}");
+                    AssertApproximatelyEqual(Math.Log((double)f, (double)fbase), (double)Mathfp.Log(f, fbase), (double)fp.Epsilon * 1000);
+                }
             }
         }
     }
