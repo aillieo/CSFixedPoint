@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -300,6 +302,42 @@ namespace AillieoUtils.CSFixedPoint.Test
                     AssertApproximatelyEqual(Math.Log((double)f, (double)fbase), (double)Mathfp.Log(f, fbase), (double)fp.Epsilon * 1000);
                 }
             }
+        }
+
+        [Fact]
+        public void FixedPointTest14()
+        {
+            Randomfp rand = new Randomfp((int)DateTime.Now.Ticks);
+            Random r = new Random();
+
+            for (int t = 0; t < 5; ++t)
+            {
+                IEnumerable<int> list1 = Enumerable.Range(0, 100000).Select(i => rand.NextInt(-100, 100));
+
+                var info = StatisticHelper.GetStatisticInfo(list1.Select(i => (fp)i));
+                testOutputHelper.WriteLine(info.ToString());
+
+                AssertApproximatelyEqual(info.average, 0, 1);
+
+                //var counts = StatisticHelper.GetCountInfo(list1);
+                //testOutputHelper.WriteLine(StatisticHelper.FormatCountInfo(counts));
+
+                testOutputHelper.WriteLine("------------------------------------------------------------------");
+            }
+
+            for (int t = 0; t < 5; ++t)
+            {
+                IEnumerable<fp> list2 = Enumerable.Range(0, 100000).Select(i => rand.Nextfp(fp.MinusOne * 100, fp.One * 100));
+
+                var info = StatisticHelper.GetStatisticInfo(list2);
+                testOutputHelper.WriteLine(info.ToString());
+
+                AssertApproximatelyEqual(info.average, 0, 1);
+
+                testOutputHelper.WriteLine("------------------------------------------------------------------");
+            }
+
+            //Assert.True(false);
         }
     }
 }
