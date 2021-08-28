@@ -6,7 +6,9 @@ namespace AillieoUtils.CSFixedPoint
     {
         private static readonly int Lo31Mask = 0x7FFFFFFF;  // 0b0111 1111 ...
         private static readonly long Hi1Mask = 1l << 31;
+        private static readonly long Hi1Mask64 = 1l << 63;
         private static readonly int RandMax = 32767;
+        private static readonly int longValueBits = 62;
 
         public Randomfp() : this(0){}
 
@@ -44,6 +46,7 @@ namespace AillieoUtils.CSFixedPoint
             return (int)(buffer & fp.FracMask);
         }
 
+        // 包含min 不包含max
         public int NextInt(int minValue, int maxValue) 
         {
             if (minValue > maxValue)
@@ -72,11 +75,12 @@ namespace AillieoUtils.CSFixedPoint
                 Next();
                 rand = buffer & ((1 << (diffBits + 1)) - 1);
             }
-            while (rand > diff);
+            while (rand >= diff);
 
             return minValue + (int)rand;
         }
 
+        // 包含0 不包含1
         public fp Nextfp() 
         {
             // 随机的32位填给raw的Frac部分
@@ -84,6 +88,7 @@ namespace AillieoUtils.CSFixedPoint
             return new fp { raw = buffer & fp.FracMask };
         }
 
+        // 包含min 包含max 和UnityEngine.Random保持一致吧
         public fp Nextfp(fp minValue, fp maxValue)
         {
             long lmin = minValue.raw;
@@ -100,24 +105,49 @@ namespace AillieoUtils.CSFixedPoint
                 return minValue;
             }
 
-            // todo 理论上diff是会超过long的 需要做一些拆分
+            // 理论上diff是会超过long的 需要做一些拆分
             long diff = lmax - lmin;
+            bool overflow = ((lmax & Hi1Mask64) != (lmin & Hi1Mask64)) && ((lmax & Hi1Mask64) != (diff & Hi1Mask64));
+            long raw;
+            if (overflow)
+            {
+                // diff的范围已超出long.MaxValue
+                // 需要处理成两部分
+                diff = (lmax >> 1) - (lmin >> 1);
+                // 将整个diff范围平均分成两部分
+                Next();
+                // 如果Next()得到奇数 在低half中随机 否则在高half中随机
+                bool low = (buffer & 1) == 1;
+                if (low)
+                {
+                    lmax -= diff;
+                    lmax -= 1;
+                }
+                else
+                {
+                    lmin += diff;
+                    lmin += 1;
+                }
+                diff = lmax - lmin;
+            }
+
+            long rand;
             long diff0 = diff;
             int diffBits = 0;
-            while (diff0 != 0)
+            while (diff0 != 0 && diffBits < longValueBits)
             {
                 diff0 >>= 1;
                 diffBits++;
             }
-            long rand;
             do
             {
                 Next();
                 rand = buffer & ((1l << (diffBits + 1)) - 1);
             }
             while (rand > diff);
+            raw = lmin + rand;
 
-            return new fp() { raw = lmin + rand };
+            return new fp() { raw = raw };
         }
 
         public Vector2 OnUnitCircle()

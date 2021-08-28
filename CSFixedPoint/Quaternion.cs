@@ -17,9 +17,26 @@ namespace AillieoUtils.CSFixedPoint
             this.w = w;
         }
 
+        public override bool Equals(object other)
+        {
+            if (other is Quaternion q)
+            {
+                return Equals(q);
+            }
+
+            return false;
+        }
+
         public bool Equals(Quaternion other)
         {
-            throw new NotImplementedException();
+            return x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
         }
+
+        public static fp Dot(Quaternion a, Quaternion b)
+        {
+            return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+        }
+
+        public static Quaternion operator -(Quaternion a) { return new Quaternion(-a.x, -a.y, -a.z, -a.w); }
     }
 }

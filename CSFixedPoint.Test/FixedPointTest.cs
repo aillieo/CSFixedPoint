@@ -308,16 +308,37 @@ namespace AillieoUtils.CSFixedPoint.Test
         public void FixedPointTest14()
         {
             Randomfp rand = new Randomfp((int)DateTime.Now.Ticks);
-            Random r = new Random();
+            //Random r = new Random();
 
             for (int t = 0; t < 5; ++t)
             {
                 IEnumerable<int> list1 = Enumerable.Range(0, 100000).Select(i => rand.NextInt(-100, 100));
+                //IEnumerable<int> list2 = Enumerable.Range(0, 100000).Select(i => r.Next(-100, 100));
 
-                var info = StatisticHelper.GetStatisticInfo(list1.Select(i => (fp)i));
-                testOutputHelper.WriteLine(info.ToString());
+                var info1 = StatisticHelper.GetStatisticInfo(list1.Select(i => (fp)i));
+                //var info2 = StatisticHelper.GetStatisticInfo(list2.Select(i => (fp)i));
+                testOutputHelper.WriteLine(info1.ToString());
+                //testOutputHelper.WriteLine(info2.ToString());
 
-                AssertApproximatelyEqual(info.average, 0, 1);
+                AssertApproximatelyEqual(info1.average, 0, 1);
+
+                //var counts = StatisticHelper.GetCountInfo(list1);
+                //testOutputHelper.WriteLine(StatisticHelper.FormatCountInfo(counts));
+
+                testOutputHelper.WriteLine("------------------------------------------------------------------");
+            }
+
+            for (int t = 0; t < 5; ++t)
+            {
+                IEnumerable<int> list1 = Enumerable.Range(0, 100000).Select(i => rand.NextInt(0, 100));
+                //IEnumerable<int> list2 = Enumerable.Range(0, 100000).Select(i => r.Next(0, 100));
+
+                var info1 = StatisticHelper.GetStatisticInfo(list1.Select(i => (fp)i));
+                //var info2 = StatisticHelper.GetStatisticInfo(list2.Select(i => (fp)i));
+                testOutputHelper.WriteLine(info1.ToString());
+                //testOutputHelper.WriteLine(info2.ToString());
+
+                AssertApproximatelyEqual(info1.average, 50, 1);
 
                 //var counts = StatisticHelper.GetCountInfo(list1);
                 //testOutputHelper.WriteLine(StatisticHelper.FormatCountInfo(counts));
@@ -333,6 +354,18 @@ namespace AillieoUtils.CSFixedPoint.Test
                 testOutputHelper.WriteLine(info.ToString());
 
                 AssertApproximatelyEqual(info.average, 0, 1);
+
+                testOutputHelper.WriteLine("------------------------------------------------------------------");
+            }
+
+            for (int t = 0; t < 5; ++t)
+            {
+                IEnumerable<fp> list2 = Enumerable.Range(0, 100000).Select(i => rand.Nextfp(fp.MinValue, fp.MaxValue));
+
+                var info = StatisticHelper.GetStatisticInfo(list2);
+                testOutputHelper.WriteLine(info.ToString());
+
+                // AssertApproximatelyEqual(info.average, 0, 1);
 
                 testOutputHelper.WriteLine("------------------------------------------------------------------");
             }
