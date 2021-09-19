@@ -187,12 +187,12 @@ namespace AillieoUtils.CSFixedPoint
                 f0 = PI - f0;
             }
 
-            fp p = (f0 / (PI / 2)) * (FPSinLut.table.Length - 1);
+            fp p = f0 * FPSinLut.oneOverStep;
             int left = FloorToInt(p);
             int right = CeilToInt(p);
 
-            fp lf = FPSinLut.table[left];
-            fp rf = FPSinLut.table[right];
+            fp lf = FPSinLut.Get(left);
+            fp rf = FPSinLut.Get(right);
             fp result = Lerp(lf, rf, p);
             return flip ? -result : result;
         }
@@ -216,19 +216,19 @@ namespace AillieoUtils.CSFixedPoint
                 flip = true;
             }
 
-            fp p = (f0 / (PI / 2)) * (FPTanLut.table.Length - 1);
+            fp p = f0 * FPTanLut.oneOverStep;
             int left = FloorToInt(p);
             int right = CeilToInt(p);
 
             // tan在 PI/2 附近的精度很底 需要做一些特殊处理
             // 待优化
-            if (right == FPTanLut.table.Length - 1)
+            if (right == FPTanLut.length)
             {
                 return Sin(f) / Cos(f);
             }
 
-            fp lf = FPTanLut.table[left];
-            fp rf = FPTanLut.table[right];
+            fp lf = FPTanLut.Get(left);
+            fp rf = FPTanLut.Get(right);
             fp result = Lerp(lf, rf, p);
             return flip ? -result : result;
         }
