@@ -241,9 +241,44 @@ namespace AillieoUtils.CSFixedPoint
 
         public static fp Atan(fp y, fp x) { throw new NotImplementedException(); }
 
-        public static fp Pow(fp f, fp p) { throw new NotImplementedException(); }
+        public static fp Pow(fp f, fp p) 
+        {
+            if (p == fp.Zero)
+            {
+                return fp.One;
+            }
 
-        public static fp Exp(fp power) { throw new NotImplementedException(); }
+            if (f == fp.One)
+            {
+                return fp.One;
+            }
+
+            fp p0 = p;
+            bool neg = false;
+            if (p0 < fp.Zero)
+            {
+                p0 = -p0;
+                neg = true;
+            }
+
+            if (p0 == fp.One)
+            {
+                return neg ? fp.One / f : f;
+            }
+
+            throw new NotImplementedException(); 
+        }
+
+        public static fp Exp(fp power) 
+        {
+            if (power == fp.Zero)
+            {
+                return fp.One;
+            }
+
+            // https://en.wikipedia.org/wiki/Generalized_continued_fraction
+            throw new NotImplementedException(); 
+        }
 
         public static fp Log(fp f, fp newBase) 
         {
@@ -272,7 +307,19 @@ namespace AillieoUtils.CSFixedPoint
             return new fp() { raw = f.raw & (~fp.FracMask) };
         }
 
-        public static fp Round(fp f) { throw new NotImplementedException(); }
+        public static fp Round(fp f)
+        {
+            long frac = f.raw & fp.FracMask;
+            fp floor = Floor(f);
+            if (frac < (fp.One.raw >> 1))
+            {
+                return floor;
+            }
+            else
+            {
+                return floor + fp.One;
+            }
+        }
 
         public static int CeilToInt(fp f)
         {
@@ -286,7 +333,10 @@ namespace AillieoUtils.CSFixedPoint
             return (int)f;
         }
 
-        public static int RoundToInt(fp f) { throw new NotImplementedException(); }
+        public static int RoundToInt(fp f) 
+        {
+            return (int)Round(f);
+        }
 
         // https://en.wikipedia.org/wiki/Methods_of_computing_square_roots
         private static long SqrtL(long l)

@@ -261,6 +261,16 @@ namespace AillieoUtils.CSFixedPoint.Test
                 AssertApproximatelyEqual(Math.Sin((double)f), (double)Mathfp.Sin(f), 1e-4);
                 AssertApproximatelyEqual(Math.Cos((double)f), (double)Mathfp.Cos(f), 1e-4);
             }
+
+            fp[] arr = new fp[]{ fp.Zero, Mathfp.PI / 2, Mathfp.PI };
+            for (int i = -10; i <= 10; ++ i)
+            {
+                for (int j = 0; j < arr.Length; ++ j)
+                {
+                    fp f = arr[j] + i * fp.Epsilon;
+                    AssertApproximatelyEqual(Math.Cos((double)f), (double)Mathfp.Cos(f), 1e-4);
+                }
+            }
         }
 
         [Fact]
@@ -371,6 +381,26 @@ namespace AillieoUtils.CSFixedPoint.Test
             }
 
             //Assert.True(false);
+        }
+
+        [Fact]
+        public void FixedPointTest15()
+        {
+            foreach (var f in testSet)
+            {
+                if ((double)f >= (double)int.MaxValue + 0.5)
+                {
+                    continue;
+                }
+
+                if ((double)f <= (double)int.MinValue - 0.5)
+                {
+                    continue;
+                }
+
+                testOutputHelper.WriteLine($"{f}");
+                Assert.Equal((double)Mathfp.Round(f), Math.Round((double)f));
+            }
         }
     }
 }
