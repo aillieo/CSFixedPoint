@@ -74,5 +74,24 @@ namespace AillieoUtils.CSFixedPoint
         {
             return x == other.x && y == other.y;
         }
+
+        public fp Magnitude
+        {
+            get
+            {
+                return Mathfp.Sqrt(x * x + y * y);
+            }
+        }
+
+        public void Normalize()
+        {
+            fp mag = Magnitude;
+            if (mag > fp.EpsilonSqrt)
+            {
+                fp inv = fp.One / mag;
+                x *= inv;
+                y *= inv;
+            }
+        }
     }
 }

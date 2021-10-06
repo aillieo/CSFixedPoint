@@ -159,7 +159,8 @@ namespace AillieoUtils.CSFixedPoint
         public Vector2 InsideUnitCircle()
         {
             Vector2 v = OnUnitCircle();
-            return v *= Mathfp.Pow(Nextfp(), fp.One / 2);
+            v *= Mathfp.Sqrt(Nextfp());
+            return v;
         }
 
         public Vector3 OnUnitSphere()
@@ -176,8 +177,44 @@ namespace AillieoUtils.CSFixedPoint
             return v *= Mathfp.Pow(Nextfp(), fp.One / 3);
         }
 
-        public Quaternion RotationUniform() { throw new NotImplementedException(); }
+        public Quaternion Rotation()
+        {
+            Quaternion q = new Quaternion(
+                Nextfp(fp.MinusOne, fp.One),
+                Nextfp(fp.MinusOne, fp.One),
+                Nextfp(fp.MinusOne, fp.One),
+                Nextfp(fp.MinusOne, fp.One));
 
-        public Quaternion Rotation() { throw new NotImplementedException(); }
+            q.Normalize();
+
+            if (Quaternion.Dot(q, Quaternion.Identity) < fp.Zero)
+            {
+                q = -q;
+            }
+
+            return q;
+        }
+
+        // http://planning.cs.uiuc.edu/node198.html
+        public Quaternion RotationUniform()
+        {
+            fp u1 = Nextfp();
+            fp u2 = Nextfp();
+            fp u3 = Nextfp();
+
+            Quaternion q = new Quaternion(
+                Mathfp.Sqrt(fp.One - u1) * Mathfp.Sin(Mathfp.PI * 2 * u2),
+                Mathfp.Sqrt(fp.One - u1) * Mathfp.Cos(Mathfp.PI * 2 * u2),
+                Mathfp.Sqrt(u1) * Mathfp.Sin(Mathfp.PI * 2 * u3),
+                Mathfp.Sqrt(u1) * Mathfp.Cos(Mathfp.PI * 2 * u3));
+
+            if (Quaternion.Dot(q, Quaternion.Identity) < fp.Zero)
+            {
+                q = -q;
+            }
+
+            return q;
+        }
+
     }
 }
